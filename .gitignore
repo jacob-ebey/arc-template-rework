@@ -1,0 +1,6 @@
+.DS_Store
+.cache
+_build
+node_modules
+public/build
+remix-build.*
