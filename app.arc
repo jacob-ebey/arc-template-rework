@@ -2,8 +2,9 @@
 remix-arc-rework
 
 @http
+any /
 any /about
-any /*
+any /post-a/:id
 
 @static
 
