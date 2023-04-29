@@ -2,6 +2,7 @@
 remix-arc-rework
 
 @http
+any /about
 any /*
 
 @static

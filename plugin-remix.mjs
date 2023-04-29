@@ -8,26 +8,28 @@ let lastTimeout;
  * Broadcasts the build hash to the Remix dev server on a timeout.
  * @param {string} buildPath
  */
-function broadcast(buildPath) {
+function broadcast(buildPaths) {
   if (lastTimeout) {
     clearTimeout(lastTimeout);
   }
 
   lastTimeout = setTimeout(async () => {
-    const contents = fs.readFileSync(buildPath, "utf8");
-    const manifestMatches = contents.matchAll(/manifest-([A-f0-9]+)\.js/g);
     const sent = new Set();
-    for (const match of manifestMatches) {
-      const buildHash = match[1].toLowerCase();
-      if (!sent.has(buildHash)) {
-        sent.add(buildHash);
-        logDevReady({ assets: { version: buildHash } });
+    for (const buildPath of buildPaths) {
+      const contents = fs.readFileSync(buildPath, "utf8");
+      const manifestMatches = contents.matchAll(/manifest-([A-f0-9]+)\.js/g);
+      for (const match of manifestMatches) {
+        const buildHash = match[1].toLowerCase();
+        if (!sent.has(buildHash)) {
+          sent.add(buildHash);
+          logDevReady({ assets: { version: buildHash } });
+        }
       }
     }
   }, 10);
 }
 
-let buildPath;
+let buildPaths = new Set();
 export default {
   set: {
     env() {
@@ -45,22 +47,33 @@ export default {
       // remix config if not manually specified.
       const props = new Map(arc.remix || []);
       let userBuildPath = props.get("build-path");
-
-      if (!userBuildPath) {
-        const remixConfig = await readConfig();
-        userBuildPath = remixConfig.serverBuildPath;
+      if (userBuildPath) {
+        buildPaths.add(path.resolve(process.cwd(), userBuildPath));
       }
 
-      buildPath = path.resolve(process.cwd(), userBuildPath);
+      const remixConfig = await readConfig();
+      if (!userBuildPath && !remixConfig.serverBundles) {
+        buildPaths.add(
+          path.resolve(process.cwd(), remixConfig.serverBuildPath)
+        );
+      }
+
+      if (remixConfig.serverBundles) {
+        remixConfig.serverBundles.forEach((bundle) => {
+          buildPaths.add(
+            path.resolve(remixConfig.rootDirectory, bundle.serverBuildPath)
+          );
+        });
+      }
 
       // Broadcast the build hash to the Remix dev server.
-      broadcast(buildPath);
+      broadcast(buildPaths);
     },
     watcher({ filename }) {
       // If the build path changes, broadcast the build hash to the
       // Remix dev server
-      if (filename === buildPath) {
-        broadcast(buildPath);
+      if (buildPaths.has(filename)) {
+        broadcast(buildPaths);
       }
     },
   },

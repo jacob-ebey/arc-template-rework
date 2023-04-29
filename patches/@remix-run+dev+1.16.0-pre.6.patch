@@ -1,0 +1,683 @@
+diff --git a/node_modules/@remix-run/dev/config/defaults/cloudflare/entry.server.react-stream.tsx b/node_modules/@remix-run/dev/config/defaults/cloudflare/entry.server.react-stream.tsx
+new file mode 100644
+index 0000000..3e08f46
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/cloudflare/entry.server.react-stream.tsx
+@@ -0,0 +1,32 @@
++import type { EntryContext } from "@remix-run/cloudflare";
++import { RemixServer } from "@remix-run/react";
++import isbot from "isbot";
++import { renderToReadableStream } from "react-dom/server";
++
++export default async function handleRequest(
++  request: Request,
++  responseStatusCode: number,
++  responseHeaders: Headers,
++  remixContext: EntryContext
++) {
++  const body = await renderToReadableStream(
++    <RemixServer context={remixContext} url={request.url} />,
++    {
++      signal: request.signal,
++      onError(error: unknown) {
++        console.error(error);
++        responseStatusCode = 500;
++      },
++    }
++  );
++
++  if (isbot(request.headers.get("user-agent"))) {
++    await body.allReady;
++  }
++
++  responseHeaders.set("Content-Type", "text/html");
++  return new Response(body, {
++    headers: responseHeaders,
++    status: responseStatusCode,
++  });
++}
+diff --git a/node_modules/@remix-run/dev/config/defaults/cloudflare/entry.server.react-string.tsx b/node_modules/@remix-run/dev/config/defaults/cloudflare/entry.server.react-string.tsx
+new file mode 100644
+index 0000000..081e0d6
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/cloudflare/entry.server.react-string.tsx
+@@ -0,0 +1,21 @@
++import type { EntryContext } from "@remix-run/cloudflare";
++import { renderToString } from "react-dom/server";
++import { RemixServer } from "@remix-run/react";
++
++export default function handleRequest(
++  request: Request,
++  responseStatusCode: number,
++  responseHeaders: Headers,
++  remixContext: EntryContext
++) {
++  let markup = renderToString(
++    <RemixServer context={remixContext} url={request.url} />
++  );
++
++  responseHeaders.set("Content-Type", "text/html");
++
++  return new Response("<!DOCTYPE html>" + markup, {
++    status: responseStatusCode,
++    headers: responseHeaders,
++  });
++}
+diff --git a/node_modules/@remix-run/dev/config/defaults/deno/entry.server.react-stream.tsx b/node_modules/@remix-run/dev/config/defaults/deno/entry.server.react-stream.tsx
+new file mode 100644
+index 0000000..7be6c74
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/deno/entry.server.react-stream.tsx
+@@ -0,0 +1,32 @@
++import type { EntryContext } from "@remix-run/deno";
++import { RemixServer } from "@remix-run/react";
++import isbot from "isbot";
++import { renderToReadableStream } from "react-dom/server";
++
++export default async function handleRequest(
++  request: Request,
++  responseStatusCode: number,
++  responseHeaders: Headers,
++  remixContext: EntryContext
++) {
++  const body = await renderToReadableStream(
++    <RemixServer context={remixContext} url={request.url} />,
++    {
++      signal: request.signal,
++      onError(error: unknown) {
++        console.error(error);
++        responseStatusCode = 500;
++      },
++    }
++  );
++
++  if (isbot(request.headers.get("user-agent"))) {
++    await body.allReady;
++  }
++
++  responseHeaders.set("Content-Type", "text/html");
++  return new Response(body, {
++    headers: responseHeaders,
++    status: responseStatusCode,
++  });
++}
+diff --git a/node_modules/@remix-run/dev/config/defaults/deno/entry.server.react-string.tsx b/node_modules/@remix-run/dev/config/defaults/deno/entry.server.react-string.tsx
+new file mode 100644
+index 0000000..98b5799
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/deno/entry.server.react-string.tsx
+@@ -0,0 +1,21 @@
++import type { EntryContext } from "@remix-run/deno";
++import { renderToString } from "react-dom/server";
++import { RemixServer } from "@remix-run/react";
++
++export default function handleRequest(
++  request: Request,
++  responseStatusCode: number,
++  responseHeaders: Headers,
++  remixContext: EntryContext
++) {
++  let markup = renderToString(
++    <RemixServer context={remixContext} url={request.url} />
++  );
++
++  responseHeaders.set("Content-Type", "text/html");
++
++  return new Response("<!DOCTYPE html>" + markup, {
++    status: responseStatusCode,
++    headers: responseHeaders,
++  });
++}
+diff --git a/node_modules/@remix-run/dev/config/defaults/entry.client.react-stream.tsx b/node_modules/@remix-run/dev/config/defaults/entry.client.react-stream.tsx
+new file mode 100644
+index 0000000..999c0a1
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/entry.client.react-stream.tsx
+@@ -0,0 +1,12 @@
++import { RemixBrowser } from "@remix-run/react";
++import { startTransition, StrictMode } from "react";
++import { hydrateRoot } from "react-dom/client";
++
++startTransition(() => {
++  hydrateRoot(
++    document,
++    <StrictMode>
++      <RemixBrowser />
++    </StrictMode>
++  );
++});
+diff --git a/node_modules/@remix-run/dev/config/defaults/entry.client.react-string.tsx b/node_modules/@remix-run/dev/config/defaults/entry.client.react-string.tsx
+new file mode 100644
+index 0000000..3eec1fd
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/entry.client.react-string.tsx
+@@ -0,0 +1,4 @@
++import { RemixBrowser } from "@remix-run/react";
++import { hydrate } from "react-dom";
++
++hydrate(<RemixBrowser />, document);
+diff --git a/node_modules/@remix-run/dev/config/defaults/entry.dev.ts b/node_modules/@remix-run/dev/config/defaults/entry.dev.ts
+new file mode 100644
+index 0000000..036c6c0
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/entry.dev.ts
+@@ -0,0 +1,13 @@
++// @ts-nocheck
++/* eslint-disable */
++
++export default () => {
++  import("react");
++  import("react/jsx-dev-runtime");
++  import("react/jsx-runtime");
++  import("react-dom");
++  import("react-dom/client");
++  import("react-refresh/runtime");
++  import("@remix-run/react");
++  import("remix:hmr");
++};
+diff --git a/node_modules/@remix-run/dev/config/defaults/node/entry.server.react-stream.tsx b/node_modules/@remix-run/dev/config/defaults/node/entry.server.react-stream.tsx
+new file mode 100644
+index 0000000..469de6d
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/node/entry.server.react-stream.tsx
+@@ -0,0 +1,113 @@
++import { PassThrough } from "stream";
++import type { EntryContext } from "@remix-run/node";
++import { Response } from "@remix-run/node";
++import { RemixServer } from "@remix-run/react";
++import isbot from "isbot";
++import { renderToPipeableStream } from "react-dom/server";
++
++const ABORT_DELAY = 5_000;
++
++export default function handleRequest(
++  request: Request,
++  responseStatusCode: number,
++  responseHeaders: Headers,
++  remixContext: EntryContext
++) {
++  return isbot(request.headers.get("user-agent"))
++    ? handleBotRequest(
++        request,
++        responseStatusCode,
++        responseHeaders,
++        remixContext
++      )
++    : handleBrowserRequest(
++        request,
++        responseStatusCode,
++        responseHeaders,
++        remixContext
++      );
++}
++
++function handleBotRequest(
++  request: Request,
++  responseStatusCode: number,
++  responseHeaders: Headers,
++  remixContext: EntryContext
++) {
++  return new Promise((resolve, reject) => {
++    const { pipe, abort } = renderToPipeableStream(
++      <RemixServer
++        context={remixContext}
++        url={request.url}
++        abortDelay={ABORT_DELAY}
++      />,
++      {
++        onAllReady() {
++          const body = new PassThrough();
++
++          responseHeaders.set("Content-Type", "text/html");
++
++          resolve(
++            new Response(body, {
++              headers: responseHeaders,
++              status: responseStatusCode,
++            })
++          );
++
++          pipe(body);
++        },
++        onShellError(error: unknown) {
++          reject(error);
++        },
++        onError(error: unknown) {
++          responseStatusCode = 500;
++          console.error(error);
++        },
++      }
++    );
++
++    setTimeout(abort, ABORT_DELAY);
++  });
++}
++
++function handleBrowserRequest(
++  request: Request,
++  responseStatusCode: number,
++  responseHeaders: Headers,
++  remixContext: EntryContext
++) {
++  return new Promise((resolve, reject) => {
++    const { pipe, abort } = renderToPipeableStream(
++      <RemixServer
++        context={remixContext}
++        url={request.url}
++        abortDelay={ABORT_DELAY}
++      />,
++      {
++        onShellReady() {
++          const body = new PassThrough();
++
++          responseHeaders.set("Content-Type", "text/html");
++
++          resolve(
++            new Response(body, {
++              headers: responseHeaders,
++              status: responseStatusCode,
++            })
++          );
++
++          pipe(body);
++        },
++        onShellError(error: unknown) {
++          reject(error);
++        },
++        onError(error: unknown) {
++          console.error(error);
++          responseStatusCode = 500;
++        },
++      }
++    );
++
++    setTimeout(abort, ABORT_DELAY);
++  });
++}
+diff --git a/node_modules/@remix-run/dev/config/defaults/node/entry.server.react-string.tsx b/node_modules/@remix-run/dev/config/defaults/node/entry.server.react-string.tsx
+new file mode 100644
+index 0000000..30f77ec
+--- /dev/null
++++ b/node_modules/@remix-run/dev/config/defaults/node/entry.server.react-string.tsx
+@@ -0,0 +1,21 @@
++import type { EntryContext } from "@remix-run/node";
++import { renderToString } from "react-dom/server";
++import { RemixServer } from "@remix-run/react";
++
++export default function handleRequest(
++  request: Request,
++  responseStatusCode: number,
++  responseHeaders: Headers,
++  remixContext: EntryContext
++) {
++  let markup = renderToString(
++    <RemixServer context={remixContext} url={request.url} />
++  );
++
++  responseHeaders.set("Content-Type", "text/html");
++
++  return new Response("<!DOCTYPE html>" + markup, {
++    status: responseStatusCode,
++    headers: responseHeaders,
++  });
++}
+diff --git a/node_modules/@remix-run/dev/dist/compiler/server/compiler.js b/node_modules/@remix-run/dev/dist/compiler/server/compiler.js
+index f2bf6b7..ba29bc6 100644
+--- a/node_modules/@remix-run/dev/dist/compiler/server/compiler.js
++++ b/node_modules/@remix-run/dev/dist/compiler/server/compiler.js
+@@ -49,7 +49,7 @@ function _interopNamespace(e) {
+ 
+ var esbuild__namespace = /*#__PURE__*/_interopNamespace(esbuild);
+ 
+-const createEsbuildConfig = (ctx, channels) => {
++const createEsbuildConfig = async (ctx, channels, serverBundle) => {
+   let stdin;
+   let entryPoints;
+   if (ctx.config.serverEntryPoint) {
+@@ -61,13 +61,15 @@ const createEsbuildConfig = (ctx, channels) => {
+       loader: "ts"
+     };
+   }
++  let routes$1 = (serverBundle === null || serverBundle === void 0 ? void 0 : serverBundle.routes) || ctx.config.routes;
++  let serverBuildPath = (serverBundle === null || serverBundle === void 0 ? void 0 : serverBundle.serverBuildPath) ?? ctx.config.serverBuildPath;
+   let plugins = [deprecatedRemixPackage.deprecatedRemixPackagePlugin(ctx), cssModuleImports.cssModulesPlugin(ctx, {
+     outputCss: false
+   }), vanillaExtract.vanillaExtractPlugin(ctx, {
+     outputCss: false
+   }), cssSideEffectImports.cssSideEffectImportsPlugin(ctx), cssImports.cssFilePlugin(ctx), absoluteCssUrlsPlugin.absoluteCssUrlsPlugin(), external.externalPlugin(/^https?:\/\//, {
+     sideEffects: false
+-  }), mdx.mdxPlugin(ctx), emptyModules.emptyModulesPlugin(ctx, /\.client(\.[jt]sx?)?$/), routes.serverRouteModulesPlugin(ctx), entry.serverEntryModulePlugin(ctx), manifest.serverAssetsManifestPlugin(channels), bareImports.serverBareModulesPlugin(ctx), external.externalPlugin(/^node:.*/, {
++  }), mdx.mdxPlugin(ctx), emptyModules.emptyModulesPlugin(ctx, /\.client(\.[jt]sx?)?$/), routes.serverRouteModulesPlugin(ctx, routes$1), entry.serverEntryModulePlugin(ctx, routes$1), manifest.serverAssetsManifestPlugin(channels, routes$1), bareImports.serverBareModulesPlugin(ctx), external.externalPlugin(/^node:.*/, {
+     sideEffects: false
+   })];
+   if (ctx.config.serverPlatform !== "node") {
+@@ -77,7 +79,7 @@ const createEsbuildConfig = (ctx, channels) => {
+     absWorkingDir: ctx.config.rootDirectory,
+     stdin,
+     entryPoints,
+-    outfile: ctx.config.serverBuildPath,
++    outfile: serverBuildPath,
+     conditions: ctx.config.serverConditions,
+     platform: ctx.config.serverPlatform,
+     format: ctx.config.serverModuleFormat,
+@@ -120,15 +122,21 @@ const createEsbuildConfig = (ctx, channels) => {
+   };
+ };
+ const create = async (ctx, channels) => {
++  if (ctx.config.serverBundles) {
++    return createMultiBundle(ctx, channels, ctx.config.serverBundles);
++  }
+   let compiler = await esbuild__namespace.context({
+-    ...createEsbuildConfig(ctx, channels),
++    ...(await createEsbuildConfig(ctx, channels)),
+     write: false
+   });
+   let compile = async () => {
+     let {
+       outputFiles
+     } = await compiler.rebuild();
+-    return outputFiles;
++    return [{
++      buildPath: ctx.config.serverBuildPath,
++      files: outputFiles
++    }];
+   };
+   return {
+     compile,
+@@ -136,5 +144,35 @@ const create = async (ctx, channels) => {
+     dispose: compiler.dispose
+   };
+ };
++const createMultiBundle = async (ctx, channels, serverBundles) => {
++  let compilers = await Promise.all(serverBundles.map(async serverBundle => esbuild__namespace.context({
++    ...(await createEsbuildConfig(ctx, channels, serverBundle)),
++    write: false
++  })));
++  let compile = async () => {
++    let results = [];
++    for (let i = 0; i < compilers.length; i++) {
++      let compiler = compilers[i];
++      let buildPath = serverBundles[i].serverBuildPath;
++      let buildResult = await compiler.rebuild();
++      results.push({
++        buildPath,
++        files: buildResult.outputFiles
++      });
++    }
++    return results;
++  };
++  let cancel = async () => {
++    await Promise.all(compilers.map(c => c.cancel()));
++  };
++  let dispose = async () => {
++    await Promise.all(compilers.map(c => c.dispose()));
++  };
++  return {
++    compile,
++    cancel,
++    dispose
++  };
++};
+ 
+ exports.create = create;
+diff --git a/node_modules/@remix-run/dev/dist/compiler/server/plugins/entry.js b/node_modules/@remix-run/dev/dist/compiler/server/plugins/entry.js
+index 22407e8..f97a458 100644
+--- a/node_modules/@remix-run/dev/dist/compiler/server/plugins/entry.js
++++ b/node_modules/@remix-run/dev/dist/compiler/server/plugins/entry.js
+@@ -23,7 +23,7 @@ var virtualModules = require('../virtualModules.js');
+ function serverEntryModulePlugin({
+   config,
+   options
+-}) {
++}, routes) {
+   let filter = virtualModules.serverBuildVirtualModule.filter;
+   return {
+     name: "server-entry-module",
+@@ -46,10 +46,10 @@ function serverEntryModulePlugin({
+           loader: "js",
+           contents: `
+ import * as entryServer from ${JSON.stringify(config.entryServerFilePath)};
+-${Object.keys(config.routes).map((key, index) => {
++${Object.keys(routes).map((key, index) => {
+             // IMPORTANT: Any values exported from this generated module must also be
+             // typed in `packages/remix-dev/server-build.ts` to avoid tsc errors.
+-            let route = config.routes[key];
++            let route = routes[key];
+             return `import * as route${index} from ${JSON.stringify(`./${route.file}`)};`;
+           }).join("\n")}
+   export { default as assets } from ${JSON.stringify(virtualModules.assetsManifestVirtualModule.id)};
+@@ -61,8 +61,8 @@ ${Object.keys(config.routes).map((key, index) => {
+             websocketPort: options.devWebsocketPort
+           })}` : ""}
+   export const routes = {
+-    ${Object.keys(config.routes).map((key, index) => {
+-            let route = config.routes[key];
++    ${Object.keys(routes).map((key, index) => {
++            let route = routes[key];
+             return `${JSON.stringify(key)}: {
+       id: ${JSON.stringify(route.id)},
+       parentId: ${JSON.stringify(route.parentId)},
+diff --git a/node_modules/@remix-run/dev/dist/compiler/server/plugins/manifest.js b/node_modules/@remix-run/dev/dist/compiler/server/plugins/manifest.js
+index 80f14d8..82b1de9 100644
+--- a/node_modules/@remix-run/dev/dist/compiler/server/plugins/manifest.js
++++ b/node_modules/@remix-run/dev/dist/compiler/server/plugins/manifest.js
+@@ -24,7 +24,7 @@ var jsesc__default = /*#__PURE__*/_interopDefaultLegacy(jsesc);
+  * the assets manifest. This is used in the server entry module to access the
+  * assets manifest in the server build.
+  */
+-function serverAssetsManifestPlugin(channels) {
++function serverAssetsManifestPlugin(channels, routes) {
+   let filter = virtualModules.assetsManifestVirtualModule.filter;
+   return {
+     name: "server-assets-manifest",
+@@ -44,8 +44,22 @@ function serverAssetsManifestPlugin(channels) {
+       }, async () => {
+         let manifest = await channels.manifest.result;
+         if (!manifest.ok) throw Error("canceled");
++
++        // Filter out the routes that are not in this bundle
++        let assetsManifest = {
++          ...manifest.value
++        };
++        let assetsManifestRoutes = {
++          ...manifest.value.routes
++        };
++        for (let id in assetsManifestRoutes) {
++          if (!(id in routes)) {
++            delete assetsManifestRoutes[id];
++          }
++        }
++        assetsManifest.routes = assetsManifestRoutes;
+         return {
+-          contents: `export default ${jsesc__default["default"](manifest.value, {
++          contents: `export default ${jsesc__default["default"](assetsManifest, {
+             es6: true
+           })};`,
+           loader: "js"
+diff --git a/node_modules/@remix-run/dev/dist/compiler/server/plugins/routes.js b/node_modules/@remix-run/dev/dist/compiler/server/plugins/routes.js
+index 6bcab4d..fc95c22 100644
+--- a/node_modules/@remix-run/dev/dist/compiler/server/plugins/routes.js
++++ b/node_modules/@remix-run/dev/dist/compiler/server/plugins/routes.js
+@@ -43,11 +43,11 @@ var fse__namespace = /*#__PURE__*/_interopNamespace(fse);
+  */
+ function serverRouteModulesPlugin({
+   config
+-}) {
++}, routes) {
+   return {
+     name: "server-route-modules",
+     setup(build) {
+-      let routeFiles = new Set(Object.keys(config.routes).map(key => path__namespace.resolve(config.appDirectory, config.routes[key].file)));
++      let routeFiles = new Set(Object.keys(routes).map(key => path__namespace.resolve(config.appDirectory, routes[key].file)));
+       build.onResolve({
+         filter: /.*/
+       }, args => {
+diff --git a/node_modules/@remix-run/dev/dist/compiler/server/write.js b/node_modules/@remix-run/dev/dist/compiler/server/write.js
+index 02ca1e1..6f70c19 100644
+--- a/node_modules/@remix-run/dev/dist/compiler/server/write.js
++++ b/node_modules/@remix-run/dev/dist/compiler/server/write.js
+@@ -36,37 +36,40 @@ function _interopNamespace(e) {
+ var path__namespace = /*#__PURE__*/_interopNamespace(path);
+ var fse__namespace = /*#__PURE__*/_interopNamespace(fse);
+ 
+-async function write(config, outputFiles) {
+-  await fse__namespace.ensureDir(path__namespace.dirname(config.serverBuildPath));
+-  for (let file of outputFiles) {
+-    if (file.path.endsWith(".js") || file.path.endsWith(".mjs")) {
+-      // fix sourceMappingURL to be relative to current path instead of /build
+-      let filename = file.path.substring(file.path.lastIndexOf(path__namespace.sep) + 1);
+-      let escapedFilename = filename.replace(/\./g, "\\.");
+-      let pattern = `(//# sourceMappingURL=)(.*)${escapedFilename}`;
+-      let contents = Buffer.from(file.contents).toString("utf-8");
+-      contents = contents.replace(new RegExp(pattern), `$1${filename}`);
+-      await fse__namespace.writeFile(file.path, contents);
+-    } else if (file.path.endsWith(".map")) {
+-      // Don't write CSS source maps to server build output
+-      if (file.path.endsWith(".css.map")) {
+-        break;
+-      }
++async function write(config, outputs) {
++  for (let output of outputs) {
++    let outputFiles = output.files;
++    await fse__namespace.ensureDir(path__namespace.dirname(output.buildPath));
++    for (let file of outputFiles) {
++      if (file.path.endsWith(".js") || file.path.endsWith(".mjs")) {
++        // fix sourceMappingURL to be relative to current path instead of /build
++        let filename = file.path.substring(file.path.lastIndexOf(path__namespace.sep) + 1);
++        let escapedFilename = filename.replace(/\./g, "\\.");
++        let pattern = `(//# sourceMappingURL=)(.*)${escapedFilename}`;
++        let contents = Buffer.from(file.contents).toString("utf-8");
++        contents = contents.replace(new RegExp(pattern), `$1${filename}`);
++        await fse__namespace.writeFile(file.path, contents);
++      } else if (file.path.endsWith(".map")) {
++        // Don't write CSS source maps to server build output
++        if (file.path.endsWith(".css.map")) {
++          break;
++        }
+ 
+-      // remove route: prefix from source filenames so breakpoints work
+-      let contents = Buffer.from(file.contents).toString("utf-8");
+-      contents = contents.replace(/"route:/gm, '"');
+-      await fse__namespace.writeFile(file.path, contents);
+-    } else {
+-      let assetPath = path__namespace.join(config.assetsBuildDirectory, file.path.replace(path__namespace.dirname(config.serverBuildPath), ""));
++        // remove route: prefix from source filenames so breakpoints work
++        let contents = Buffer.from(file.contents).toString("utf-8");
++        contents = contents.replace(/"route:/gm, '"');
++        await fse__namespace.writeFile(file.path, contents);
++      } else {
++        let assetPath = path__namespace.join(config.assetsBuildDirectory, file.path.replace(path__namespace.dirname(output.buildPath), ""));
+ 
+-      // Don't write CSS bundle from server build to browser assets directory,
+-      // especially since the file name doesn't contain a content hash
+-      if (assetPath === path__namespace.join(config.assetsBuildDirectory, "index.css")) {
+-        break;
++        // Don't write CSS bundle from server build to browser assets directory,
++        // especially since the file name doesn't contain a content hash
++        if (assetPath === path__namespace.join(config.assetsBuildDirectory, "index.css")) {
++          break;
++        }
++        await fse__namespace.ensureDir(path__namespace.dirname(assetPath));
++        await fse__namespace.writeFile(assetPath, file.contents);
+       }
+-      await fse__namespace.ensureDir(path__namespace.dirname(assetPath));
+-      await fse__namespace.writeFile(assetPath, file.contents);
+     }
+   }
+ }
+diff --git a/node_modules/@remix-run/dev/dist/config.js b/node_modules/@remix-run/dev/dist/config.js
+index 8013592..6ba0225 100644
+--- a/node_modules/@remix-run/dev/dist/config.js
++++ b/node_modules/@remix-run/dev/dist/config.js
+@@ -246,6 +246,7 @@ async function readConfig(remixRoot, serverMode = serverModes.ServerMode.Product
+       };
+     }
+   }
++  let serverBundles = await resolveServerBundles(rootDirectory, appConfig, routes$1);
+   let watchPaths = [];
+   if (typeof appConfig.watchPaths === "function") {
+     let directories = await appConfig.watchPaths();
+@@ -291,6 +292,7 @@ async function readConfig(remixRoot, serverMode = serverModes.ServerMode.Product
+     rootDirectory,
+     routes: routes$1,
+     serverBuildPath,
++    serverBundles,
+     serverBuildTarget,
+     serverBuildTargetEntryModule,
+     serverConditions,
+@@ -356,6 +358,75 @@ const resolveServerBuildPath = (rootDirectory, appConfig) => {
+   }
+   return path__default["default"].resolve(rootDirectory, serverBuildPath);
+ };
++const resolveServerBundles = async (rootDirectory, appConfig, allRoutes) => {
++  var _appConfig$serverBund;
++  if (!((_appConfig$serverBund = appConfig.serverBundles) !== null && _appConfig$serverBund !== void 0 && _appConfig$serverBund.length)) {
++    return undefined;
++  }
++  let catchAllBundle = undefined;
++  let consumedRoutes = new Set();
++  let serverBundles = await Promise.all(appConfig.serverBundles.map(async (serverBundle, index) => {
++    if (serverBundle.catchAll) {
++      if (catchAllBundle) {
++        throw new Error("Only one serverBundle can be marked as `catchAll`");
++      }
++      catchAllBundle = {
++        serverBuildPath: path__default["default"].resolve(rootDirectory, serverBundle.serverBuildPath),
++        catchAll: true
++      };
++      return catchAllBundle;
++    }
++    if (!serverBundle.routes) {
++      throw new Error("serverBundles must include a `routes` property");
++    }
++    // Build up the resolved `routes` including any parent routes
++    let routes = {};
++    console.log(serverBundle.routes);
++    for (let id of typeof serverBundle.routes === "function" ? await serverBundle.routes() : serverBundle.routes) {
++      let currentRoute = allRoutes[id];
++      do {
++        if (!currentRoute) {
++          throw new Error(`serverBundle route not found: ${id}`);
++        }
++        consumedRoutes.add(currentRoute.id);
++        routes[currentRoute.id] = currentRoute;
++        if (currentRoute.parentId) {
++          currentRoute = allRoutes[currentRoute.parentId];
++        } else {
++          currentRoute = undefined;
++        }
++      } while (currentRoute);
++    }
++    return {
++      routes,
++      serverBuildPath: path__default["default"].resolve(rootDirectory, serverBundle.serverBuildPath),
++      catchAll: false
++    };
++  }));
++
++  // stupid typescript this isn't never...
++  catchAllBundle = catchAllBundle;
++  if (catchAllBundle) {
++    let routes = {};
++    for (let id of Object.keys(allRoutes)) {
++      if (consumedRoutes.has(id)) continue;
++      let currentRoute = allRoutes[id];
++      do {
++        if (!currentRoute) {
++          throw new Error(`serverBundle route not found: ${id}`);
++        }
++        routes[currentRoute.id] = currentRoute;
++        if (currentRoute.parentId) {
++          currentRoute = allRoutes[currentRoute.parentId];
++        } else {
++          currentRoute = undefined;
++        }
++      } while (currentRoute);
++    }
++    catchAllBundle.routes = routes;
++  }
++  return serverBundles;
++};
+ 
+ // adds types for `Intl.ListFormat` to the global namespace
+ // we could also update our `tsconfig.json` to include `lib: ["es2021"]`
